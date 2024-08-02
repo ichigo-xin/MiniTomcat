@@ -1,4 +1,4 @@
-package src.server;
+package server;
 
 import java.io.File;
 import java.io.IOException;
@@ -7,14 +7,16 @@ import java.io.OutputStream;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.net.http.WebSocket;
+;
 
 public class HttpServer {
     public static final String WEB_ROOT = System.getProperty("user.dir") + File.separator + "webroot";
+
     public static void main(String[] args) {
         HttpServer server = new HttpServer();
         server.await();
     }
+
     public void await() { //服务器循环等待请求并处理
         ServerSocket serverSocket = null;
         int port = 8080;
@@ -38,7 +40,13 @@ public class HttpServer {
                 request.parse();
                 Response response = new Response(output);
                 response.setRequest(request);
-                response.sendStaticResource();
+                if (request.getUri().startsWith("/servlet/")) {
+                    ServletProcessor processor = new ServletProcessor();
+                    processor.process(request, response);
+                } else {
+                    StaticResourceProcessor processor = new StaticResourceProcessor();
+                    processor.process(request, response);
+                }
                 socket.close();
 
             } catch (IOException e) {
