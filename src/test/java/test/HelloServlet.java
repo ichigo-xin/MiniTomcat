@@ -1,7 +1,8 @@
 package test;
 import server.Request;
 import server.Response;
-import server.Servlet;
+
+import javax.servlet.Servlet;
 import java.io.IOException;
 public class HelloServlet implements Servlet {
     @Override
