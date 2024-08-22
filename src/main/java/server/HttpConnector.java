@@ -11,8 +11,8 @@ public class HttpConnector implements Runnable {
     int minProcessors = 3;
     int maxProcessors = 10;
     int curProcessors = 0;
-    //存放Processor的池子
     Deque<HttpProcessor> processors = new ArrayDeque<>();
+
     public void run() {
         ServerSocket serverSocket = null;
         int port = 8080;
@@ -22,37 +22,40 @@ public class HttpConnector implements Runnable {
             e.printStackTrace();
             System.exit(1);
         }
-        // 初始化池子initialize processors pool
+
+        // initialize processors pool
         for (int i = 0; i < minProcessors; i++) {
             HttpProcessor initprocessor = new HttpProcessor(this);
             initprocessor.start();
             processors.push(initprocessor);
         }
         curProcessors = minProcessors;
+
         while (true) {
             Socket socket = null;
             try {
                 socket = serverSocket.accept();
-                //对每一个socket，从池子中拿到一个processor
                 HttpProcessor processor = createProcessor();
                 if (processor == null) {
                     socket.close();
                     continue;
                 }
-                //分配给这个processor
                 processor.assign(socket);
+
                 // Close the socket
 //                socket.close();
+
             } catch (Exception e) {
                 e.printStackTrace();
             }
         }
     }
+
     public void start() {
         Thread thread = new Thread(this);
         thread.start();
     }
-    //从池子中获取一个processor，池子为空且数量小于最大限制则会新建一个processor
+
     private HttpProcessor createProcessor() {
         synchronized (processors) {
             if (processors.size() > 0) {
@@ -66,6 +69,7 @@ public class HttpConnector implements Runnable {
             }
         }
     }
+
     private HttpProcessor newProcessor() {
         HttpProcessor initprocessor = new HttpProcessor(this);
         initprocessor.start();
@@ -73,7 +77,9 @@ public class HttpConnector implements Runnable {
         curProcessors++;
         return ((HttpProcessor) processors.pop());
     }
+
     void recycle(HttpProcessor processor) {
         processors.push(processor);
     }
+
 }

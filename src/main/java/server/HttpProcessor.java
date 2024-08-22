@@ -1,16 +1,13 @@
 package server;
 
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 
-
-public class HttpProcessor implements Runnable {
+public class HttpProcessor implements Runnable{
     Socket socket;
     boolean available = false;
     HttpConnector connector;
-
     public HttpProcessor(HttpConnector connector) {
         this.connector = connector;
     }
@@ -18,16 +15,19 @@ public class HttpProcessor implements Runnable {
     @Override
     public void run() {
         while (true) {
-            // 等待分配下一个 socket
+            // Wait for the next socket to be assigned
             Socket socket = await();
+
             if (socket == null) continue;
-            // 处理来自这个socket的请求
+
+            // Process the request from this socket
             process(socket);
-            // 完成此请求
+
+            // Finish up this request
             connector.recycle(this);
+
         }
     }
-
     public void start() {
         Thread thread = new Thread(this);
         thread.start();
@@ -44,55 +44,63 @@ public class HttpProcessor implements Runnable {
         try {
             input = socket.getInputStream();
             output = socket.getOutputStream();
-            // 创建请求对象并解析
-            Request request = new Request(input);
-            request.parse();
-            // 创建响应对象
+
+            // create Request object and parse
+            HttpRequest request = new HttpRequest(input);
+            request.parse(socket);
+
+            // create Response object
             Response response = new Response(output);
             response.setRequest(request);
 //               response.sendStaticResource();
-            // 检查这是对servlet还是静态资源的请求
+
+            // check if this is a request for a servlet or a static resource
             // a request for a servlet begins with "/servlet/"
             if (request.getUri().startsWith("/servlet/")) {
                 ServletProcessor processor = new ServletProcessor();
                 processor.process(request, response);
-            } else {
+            }
+            else {
                 StaticResourceProcessor processor = new StaticResourceProcessor();
                 processor.process(request, response);
             }
-            // 关闭 socket
+
+            // Close the socket
             socket.close();
+
         } catch (Exception e) {
             e.printStackTrace();
         }
+
     }
 
     synchronized void assign(Socket socket) {
-        // 等待 connector 提供新的 Socket
+        // wait for the connector to provide a new Socket
         while (available) {
             try {
                 wait();
             } catch (InterruptedException e) {
             }
         }
-        // 存储新可用的 Socket 并通知我们的线程
+        // Store the newly available Socket and notify our thread
         this.socket = socket;
         available = true;
         notifyAll();
     }
 
     private synchronized Socket await() {
-        // 等待 connector 提供一个新的 Socket
+        // Wait for the Connector to provide a new Socket
         while (!available) {
             try {
                 wait();
-            } catch (InterruptedException e) {
+            }catch (InterruptedException e) {
             }
         }
-        // 通知Connector我们已经收到这个Socket了
+        // Notify the Connector that we have received this Socket
         Socket socket = this.socket;
         available = false;
         notifyAll();
+
         return (socket);
     }
 }
