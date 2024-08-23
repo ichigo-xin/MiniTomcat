@@ -32,7 +32,6 @@ public class HttpRequest implements HttpServletRequest {
             parseConnection(socket);
             this.sis.readRequestLine(requestLine);
             parseHeaders();
-            System.out.println("----------");
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ServletException e) {
@@ -76,7 +75,6 @@ public class HttpRequest implements HttpServletRequest {
                 headers.put(name, value);
             }
         }
-
     }
 
     public String getUri() {
@@ -318,7 +316,7 @@ public class HttpRequest implements HttpServletRequest {
 
     @Override
     public String getMethod() {
-        return null;
+        return new String(this.requestLine.method, 0, this.requestLine.methodEnd);
     }
 
     @Override
